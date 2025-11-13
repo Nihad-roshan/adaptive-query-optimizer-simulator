@@ -26,3 +26,59 @@ ASTnode *createnode(int type, char *text, ASTnode *left, ASTnode *right)
     return node;
 }
 
+void ASTtraverse(ASTnode *root, int depth)
+{//preorder
+    if(root==NULL)
+    {
+        //printf("no data\n");
+        return;
+    }
+    for(int i=0;i<depth;i++)
+    {
+        printf(" ");
+    }
+
+    switch(root->type)
+    {
+        case NODE_SELECT:   printf("SELECT: %s\n",root->text);
+                            break;
+        case NODE_JOIN:     printf("JOIN: %s\n",root->text);
+                            break;
+        case NODE_TABLE:    printf("TABLE: %s\n",root->text);
+                            break;
+        case NODE_WHERE:    printf("WHERE: %s\n", root->text);
+                            break;
+    }
+    ASTtraverse(root->left,depth+1);
+    ASTtraverse(root->right,depth+1);
+    
+}
+
+int main()
+{
+/*
+SELECT students.name,results.grade
+FROM students
+JOIN results 
+ON students.rollnumber = results.rollnumber
+WHERE students.age > 18;
+*/
+
+    ASTnode *tableStudents=createnode(NODE_TABLE,"students",NULL,NULL);
+    ASTnode *tableResults=createnode(NODE_TABLE,"results",NULL,NULL);
+    ASTnode *join=createnode(NODE_JOIN,"students.rollnumber = results.rollnumber",tableStudents,tableResults);
+    ASTnode *where=createnode(NODE_WHERE, "students.age > 18",join,NULL);
+    ASTnode *select=createnode(NODE_SELECT,"students.name, results.grade", where,NULL);
+
+    printf("Query AST traversal\n");
+    ASTtraverse(select,0);
+
+    free(tableStudents);
+    free(tableResults);
+    free(join);
+    free(where);
+    free(select);
+
+    return 0;
+
+}
