@@ -54,6 +54,15 @@ void ASTtraverse(ASTnode *root, int depth)
     
 }
 
+int cost_nested_loop(int rowsA,int rowsB)
+{
+    return rowsA*rowsB;
+}
+int cost_hash_join(int rowsA,int rowsB)
+{
+    return rowsA+rowsB;
+}
+
 int main()
 {
 /*
@@ -72,6 +81,14 @@ WHERE students.age > 18;
 
     printf("Query AST traversal\n");
     ASTtraverse(select,0);
+
+    int rowsA=1;
+    int rowsB=6;
+
+    printf("cost estimation\n")
+    printf("\n\nCost of Nested Loop = %d\n",cost_nested_loop(rowsA,rowsB));
+    printf("Cost of Hash Join = %d\n",cost_hash_join(rowsA,rowsB));
+
 
     free(tableStudents);
     free(tableResults);
