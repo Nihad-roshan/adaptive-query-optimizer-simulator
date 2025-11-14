@@ -74,11 +74,6 @@ double cost_hash_join(int rowsA,int rowsB)
 void nested_loop_join(Table A, Table B)
 {
     printf("\nPerforming Nested Loop Join\n");
-    if(A.count==0 || B.count==0)
-    {
-        printf("empty table found No matches\n");
-        return;
-    }
 
     Table *outer;
     Table *inner;
@@ -94,8 +89,8 @@ void nested_loop_join(Table A, Table B)
         inner=&A;
     }
 
-    printf("Outer table is %s with rollnumber count(rows) =%d\n",outer->tablename,outer->count);
-    printf("inner table is %s with rollnumber count(rows) =%d\n",inner->tablename,inner->count);
+    printf("\nOuter table is %s with rollnumber count(rows) =%d\n",outer->tablename,outer->count);
+    printf("inner table is %s with rollnumber count(rows) =%d\n\n",inner->tablename,inner->count);
 
     int maches=0;
     for(int i=0;i<outer->count;i++)
@@ -111,11 +106,11 @@ void nested_loop_join(Table A, Table B)
     }
     if(maches==0)
     {
-        printf("nested loop join : NO matches found\n");
+        printf("\nnested loop join : NO matches found\n");
     }
     else
     {
-    printf("Total mached rollnumbers from nested loop join=%d\n",maches);
+    printf("\nTotal mached rollnumbers from nested loop join=%d\n",maches);
     }
 }
 
@@ -123,28 +118,22 @@ void hash_join(Table A,Table B)
 {
     printf("Performing Hash Join\n");
     
-    if(A.count==0 || B.count==0)
-    {
-        printf("empty table found No matches\n");
-        return;
-    }
-
     Table *build;
-    Table *prob;
+    Table *probe;
 
     if(A.count<B.count)
     {
         build=&A;
-        prob=&B;
+        probe=&B;
     }
     else
     {
         build=&B;
-        prob=&A;
+        probe=&A;
     }
 
-    printf("Build Table is %s with rollnumber count=%d\n",build->tablename,build->count);
-    printf("prob Table is %s with rollnumber count=%d\n",prob->tablename,prob->count);
+    printf("\nBuild Table is %s with rollnumber count(rows)=%d\n",build->tablename,build->count);
+    printf("probe Table is %s with rollnumber count(rows)=%d\n\n",probe->tablename,probe->count);
     
     
     int maches=0,hash[100];
@@ -160,24 +149,51 @@ void hash_join(Table A,Table B)
         hash[build->rollnumbers[i]%100]=build->rollnumbers[i];
     }
 
-    for(int i=0;i<prob->count;i++)
-    {//prob
+    for(int i=0;i<probe->count;i++)
+    {//probe
         //printf("\n-----\n");
-        int h=prob->rollnumbers[i]%100;
-        if(hash[h]==prob->rollnumbers[i])
+        int h=probe->rollnumbers[i]%100;
+        if(hash[h]==probe->rollnumbers[i])
         {
             maches++;
-            printf("Matches found =%d at hash[%d]\n",prob->rollnumbers[i],h);
+            printf("Matches found =%d at hash[%d]\n",probe->rollnumbers[i],h);
         }
     }
     if(maches==0)
     {
-    printf("hash join: No matches found\n");
+    printf("\nhash join: No matches found\n");
     }
     else
     {
-        printf("Total maches found from hash join =%d\n",maches);
+        printf("\nTotal maches found from hash join =%d\n",maches);
     }
+}
+
+void select_join_algorithm(Table A,Table B)
+{
+    if(A.count==0 || B.count==0)
+    {
+        printf("empty table found No matches\n");
+        return;
+    }
+    printf("\nCost Estimation:\n");
+    double cost_of_nested_loop=cost_nested_loop(A.count,B.count);
+    double cost_of_hash_join= cost_hash_join(A.count,B.count);
+
+    printf("Cost of Nested Loop = %.2f\n",cost_of_nested_loop);
+    printf("Cost of Hash Join = %.2f\n",cost_of_hash_join);
+
+    if(cost_of_nested_loop < cost_of_hash_join)
+    {
+        printf("\nchoosing Nested Loop Join\n");
+        nested_loop_join(A,B);
+    }
+    else
+    {
+        printf("\nchoosing Hash Loop Join\n");
+        hash_join(A,B);
+    }
+
 }
 
 
@@ -200,14 +216,6 @@ WHERE students.age > 18;
     printf("Query AST traversal\n");
     ASTtraverse(select,0);
 
-    /*int rowsA=1;
-    int rowsB=6;
-
-    printf("\nCost Estimation\n");
-    printf("Cost of Nested Loop = %.2f\n",cost_nested_loop(rowsA,rowsB));
-    printf("Cost of Hash Join = %.2f\n",cost_hash_join(rowsA,rowsB));
-    */
-
     int rollnumbersA[]={3,4,5};
     int rollnumbersB[]={1,2,3,4,5,6,7};
     int countA=sizeof(rollnumbersA)/sizeof(rollnumbersA[0]);
@@ -220,8 +228,10 @@ WHERE students.age > 18;
     Table A={"students",rollnumbersA,countA};
     Table B={"results",rollnumbersB,countB};
 
-    nested_loop_join(A,B);
-    hash_join(A,B);
+    //nested_loop_join(A,B);
+    //hash_join(A,B);
+
+    select_join_algorithm(A,B);
 
     free(tableStudents);
     free(tableResults);
