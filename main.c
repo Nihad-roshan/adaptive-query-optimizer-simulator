@@ -16,6 +16,13 @@ typedef struct ASTnode
     struct ASTnode *right;
 }ASTnode;
 
+typedef struct table
+{
+    char tablename[50];
+    int *rollnumbers;
+    int count;
+}Table;
+
 ASTnode *createnode(int type, char *text, ASTnode *left, ASTnode *right)
 {//creating new node
     ASTnode *node=malloc(sizeof(ASTnode));
@@ -54,14 +61,40 @@ void ASTtraverse(ASTnode *root, int depth)
     
 }
 
-int cost_nested_loop(int rowsA,int rowsB)
+double cost_nested_loop(int rowsA,int rowsB)
 {
-    return rowsA*rowsB;
+    return (double)rowsA*rowsB;
 }
-int cost_hash_join(int rowsA,int rowsB)
+double cost_hash_join(int rowsA,int rowsB)
 {
-    return rowsA+rowsB;
+    return (double)rowsA+rowsB;
 }
+
+
+void nested_loop_join(Table A, Table B)
+{
+    int c=0;
+    for(int i=0;i<A.count;i++)
+    {
+        for(int j=0; j<B.count;j++)
+        {
+            if(A.rollnumbers[i]==B.rollnumbers[j])
+            {
+                printf("Matches found Table A[%d]:%d\tTable B[%d]:%d\n",i,A.rollnumbers[i],j,B.rollnumbers[j]);
+                c++;
+            }
+        }
+    }
+    if(c==0)
+    {
+        printf("nested loop join : NO matches found\n");
+    }
+    else
+    {
+    printf("Total mached rollnumbers from nested loop join=%d\n",c);
+    }
+}
+
 
 int main()
 {
@@ -85,10 +118,25 @@ WHERE students.age > 18;
     int rowsA=1;
     int rowsB=6;
 
-    printf("cost estimation\n")
-    printf("\n\nCost of Nested Loop = %d\n",cost_nested_loop(rowsA,rowsB));
-    printf("Cost of Hash Join = %d\n",cost_hash_join(rowsA,rowsB));
+    printf("\nCost Estimation\n");
+    printf("Cost of Nested Loop = %.2f\n",cost_nested_loop(rowsA,rowsB));
+    printf("Cost of Hash Join = %.2f\n",cost_hash_join(rowsA,rowsB));
 
+    int rollnumbersA[]={3,4,5};
+    int rollnumbersB[]={1,2,3,4,5,6,7};
+    int countA=sizeof(rollnumbersA)/sizeof(rollnumbersA[0]);
+    int countB=sizeof(rollnumbersB)/sizeof(rollnumbersB[0]);
+
+    printf("\ncount of rollnumbersA= %d\n",countA);
+    printf("count of rollnumbersB= %d\n",countB);
+
+   
+    Table A={"students",rollnumbersA,countA};
+    Table B={"results",rollnumbersB,countB};
+
+    nested_loop_join(A,B);
+
+    //printf("rollnumbers =%d\n",A.rollnumbers);
 
     free(tableStudents);
     free(tableResults);
