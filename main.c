@@ -6,7 +6,8 @@
 #define NODE_JOIN 1
 #define NODE_TABLE 2
 #define NODE_WHERE 3
-#define NODE_COLUMN 4
+
+#define HASH_SIZE 100
 
 typedef struct ASTnode
 {
@@ -22,6 +23,55 @@ typedef struct table
     int *rollnumbers;
     int count;
 }Table;
+
+typedef enum{PLAN_SELECT_OUTPUT,PLAN_WHERE_FILTER,PLAN_NESTEDLOOP,PLAN_HASHJOIN,PLAN_TABLE_SCAN}plantype;
+
+typedef struct plannode
+{
+    plantype type;
+    char info[100];
+    struct plannode *left;
+    struct plannode *right;
+}plannode;
+
+plannode *create_plannode(plantype type,char *info,plannode *left,plannode *right)
+{
+    plannode *node=malloc(sizeof(plannode));
+    strcpy(node->info,info);
+    node->left=left;
+    node->right=right;
+    return node;
+}
+
+void print_plan(plannode *root,int depth)
+{
+    if(root==NULL)
+    {
+        return;
+    }
+
+    for(int i=0;i<depth;i++)
+    {
+        printf(" ");
+    }
+
+    switch(root->type)
+    {
+        case PLAN_SELECT_OUTPUT: printf("PROJECT: %s\n",root->info);
+                                 break;
+        case PLAN_WHERE_FILTER: printf("FILTER: %s\n",root->info);
+                                break;
+        case PLAN_NESTEDLOOP: printf("NESTED LOOP JOIN: %s\n",root->info);
+                              break;
+        case PLAN_HASHJOIN: printf("HASH JOIN: %s\n",root->info);
+                            break;
+        case PLAN_TABLE_SCAN: printf("SEQ SCAN: %S\n",root->info);
+                              break;
+    }
+
+    print_plan(root->left,depth+1);
+    print_plan(root->right,depth+1);
+}
 
 ASTnode *createnode(int type, char *text, ASTnode *left, ASTnode *right)
 {//creating new node
@@ -136,23 +186,23 @@ void hash_join(Table A,Table B)
     printf("probe Table is %s with rollnumber count(rows)=%d\n\n",probe->tablename,probe->count);
     
     
-    int maches=0,hash[100];
+    int maches=0,hash[HASH_SIZE];
 
 
-    for(int i=0; i<100;i++)
+    for(int i=0; i<HASH_SIZE;i++)
     {
         hash[i]=-1;
     }
 
     for(int i=0;i<build->count;i++)
     {//build
-        hash[build->rollnumbers[i]%100]=build->rollnumbers[i];
+        hash[build->rollnumbers[i]%HASH_SIZE]=build->rollnumbers[i];
     }
 
     for(int i=0;i<probe->count;i++)
     {//probe
         //printf("\n-----\n");
-        int h=probe->rollnumbers[i]%100;
+        int h=probe->rollnumbers[i]%HASH_SIZE;
         if(hash[h]==probe->rollnumbers[i])
         {
             maches++;
