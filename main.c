@@ -34,9 +34,10 @@ typedef struct plannode
     struct plannode *right;
 }plannode;
 
-plannode *create_plannode(plantype type,char *info,plannode *left,plannode *right)
+plannode *createplannode(plantype type,char *info,plannode *left,plannode *right)
 {
     plannode *node=malloc(sizeof(plannode));
+    node->type=type;
     strcpy(node->info,info);
     node->left=left;
     node->right=right;
@@ -47,6 +48,7 @@ void print_plan(plannode *root,int depth)
 {
     if(root==NULL)
     {
+        //printf("--1--");
         return;
     }
 
@@ -54,6 +56,7 @@ void print_plan(plannode *root,int depth)
     {
         printf(" ");
     }
+    //printf("---2---");
 
     switch(root->type)
     {
@@ -65,15 +68,17 @@ void print_plan(plannode *root,int depth)
                               break;
         case PLAN_HASHJOIN: printf("HASH JOIN: %s\n",root->info);
                             break;
-        case PLAN_TABLE_SCAN: printf("SEQ SCAN: %S\n",root->info);
-                              break;
+        case PLAN_TABLE_SCAN: //printf("--4--");
+                                printf("SEQ SCAN: %s\n",root->info);
+                               // printf("--5--");
+                                break;
     }
 
     print_plan(root->left,depth+1);
     print_plan(root->right,depth+1);
 }
 
-ASTnode *createnode(int type, char *text, ASTnode *left, ASTnode *right)
+ASTnode *createastnode(int type, char *text, ASTnode *left, ASTnode *right)
 {//creating new node
     ASTnode *node=malloc(sizeof(ASTnode));
     node->type=type;
@@ -244,6 +249,31 @@ void select_join_algorithm(Table A,Table B)
         hash_join(A,B);
     }
 
+    plannode *p_scantableA=createplannode(PLAN_TABLE_SCAN,A.tablename,NULL,NULL);
+    plannode *p_scantableB=createplannode(PLAN_TABLE_SCAN,B.tablename,NULL,NULL);
+
+    plannode *p_joinnode;
+    if(cost_of_nested_loop<cost_of_hash_join)
+    {
+        p_joinnode=createplannode(PLAN_NESTEDLOOP,"students.rollnumber = results.rollnumber",p_scantableA,p_scantableB);
+    }
+    else
+    {
+        p_joinnode=createplannode(PLAN_HASHJOIN,"students.rollnumber = results.rollnumber",p_scantableA,p_scantableB);
+    }
+
+    plannode *P_filternode=createplannode(PLAN_WHERE_FILTER,"students.age > 18",p_joinnode,NULL);
+    plannode *p_projectnode=createplannode(PLAN_SELECT_OUTPUT,"students.name, results.grade",P_filternode,NULL);
+
+    printf("\n\nQuery execution plan tree\n\n");
+    print_plan(p_projectnode,0);
+
+    free(p_scantableA);
+    free(p_scantableB);
+    free(p_joinnode);
+    free(P_filternode);
+    free(p_projectnode);
+    
 }
 
 
@@ -257,11 +287,11 @@ ON students.rollnumber = results.rollnumber
 WHERE students.age > 18;
 */
 
-    ASTnode *tableStudents=createnode(NODE_TABLE,"students",NULL,NULL);
-    ASTnode *tableResults=createnode(NODE_TABLE,"results",NULL,NULL);
-    ASTnode *join=createnode(NODE_JOIN,"students.rollnumber = results.rollnumber",tableStudents,tableResults);
-    ASTnode *where=createnode(NODE_WHERE, "students.age > 18",join,NULL);
-    ASTnode *select=createnode(NODE_SELECT,"students.name, results.grade", where,NULL);
+    ASTnode *tableStudents=createastnode(NODE_TABLE,"students",NULL,NULL);
+    ASTnode *tableResults=createastnode(NODE_TABLE,"results",NULL,NULL);
+    ASTnode *join=createastnode(NODE_JOIN,"students.rollnumber = results.rollnumber",tableStudents,tableResults);
+    ASTnode *where=createastnode(NODE_WHERE, "students.age > 18",join,NULL);
+    ASTnode *select=createastnode(NODE_SELECT,"students.name, results.grade", where,NULL);
 
     printf("Query AST traversal\n");
     ASTtraverse(select,0);
