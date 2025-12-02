@@ -10,10 +10,9 @@ A modular C project that simulates how a database query optimizer works. It buil
 project/
 │
 ├── ast.c / ast.h                → AST creation & traversal
-├── cost_estimation.c / cost.h   → Cost model (nested loop / hash join)
-├── join.c / join.h              → Join algorithm implementations
+├── cost_estimation.c / cost_estimation.h   → Cost model (nested loop / hash join)
+├── optimizer.c / optimizer.h    → Join logic + selection logic + execution
 ├── plan.c / plan.h              → Plan tree construction & visualization
-├── optimizer.c / optimizer.h    → Join selection logic
 └── main.c                       → Entry point, test query & tables
 ```
 
@@ -52,12 +51,12 @@ Plan Visualization
 * Hash Join Cost → rowsA + rowsB
 * Simple heuristic to choose cheaper join
 
-### **Join Module**
+### **Optimizer Module**
 
-* Implements:
-
-  * Nested Loop Join
-  * Hash Join (build + probe)
+* Computes costs
+* Selects the join algorithm
+* Executes join
+* Builds the plan tree
 
 ### **Plan Module**
 
@@ -76,15 +75,6 @@ PROJECT
    SEQ SCAN
    SEQ SCAN
 ```
-
-### **Optimizer Module**
-
-* Computes costs
-* Selects the join algorithm
-* Executes join
-* Builds the plan tree
-
----
 
 ##  Example Query Used
 
